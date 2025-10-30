@@ -36,16 +36,6 @@ class WalletManager {
         }
     }
 
-    async loadHashConnect() {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/hashconnect@0.6.0/dist/hashconnect.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-
     async connectWallet() {
         try {
             if (!this.hashconnect) {
@@ -161,4 +151,5 @@ class WalletManager {
 
 // Global wallet manager instance
 window.walletManager = new WalletManager();
+
 
