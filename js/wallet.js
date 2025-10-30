@@ -10,15 +10,14 @@ class WalletManager {
 
     async init() {
         try {
-            // Check if HashPack is available
-            if (typeof window.hashconnect === 'undefined') {
-                console.log('HashConnect not found, loading...');
-                await this.loadHashConnect();
+            // Check if HashConnect is available as a global (loaded via static script tag)
+            if (typeof window.HashConnect === 'undefined') {
+                throw new Error('HashConnect library not loaded. Make sure you include it in your HTML.');
             }
-            
-            this.hashconnect = new HashConnect();
+
+            this.hashconnect = new window.HashConnect();
             await this.hashconnect.init();
-            
+
             // Set up event listeners
             this.hashconnect.foundExtensionEvent.on((walletMetadata) => {
                 console.log('Found extension:', walletMetadata);
@@ -53,7 +52,7 @@ class WalletManager {
             };
 
             await this.hashconnect.connectToLocalWallet(appMetadata);
-            
+
         } catch (error) {
             console.error('Failed to connect wallet:', error);
             this.showError('Failed to connect to HashPack wallet. Please make sure HashPack is installed and try again.');
@@ -151,5 +150,3 @@ class WalletManager {
 
 // Global wallet manager instance
 window.walletManager = new WalletManager();
-
-
