@@ -1,40 +1,140 @@
-// Wallet connection and management
+/* ======================================================
+   TrustaLab — Wallet Connection (Final Version)
+   Using Hedera HashConnect SDK (Testnet Ready)
+   ====================================================== */
+
 class WalletManager {
-    constructor() {
-        this.isConnected = false;
-        this.accountId = null;
-        this.hashconnect = null;
-        this.provider = null;
-        this.signer = null;
-    }
+  constructor() {
+    this.hashconnect = null;
+    this.appMetadata = {
+      name: "TrustaLab",
+      description: "Decentralized health data verification & payments",
+      icon: window.location.origin + "/trustalab_logo.png",
+    };
+    this.accountId = null;
+    this.topic = null;
+    this.paired = false;
+  }
 
-    async init() {
-        try {
-            // Check if HashConnect is available as a global (loaded via static script tag)
-            if (typeof window.HashConnect === 'undefined') {
-                throw new Error('HashConnect library not loaded. Make sure you include it in your HTML.');
-            }
+  // Initialize HashConnect
+  async init() {
+    try {
+      if (!window.HashConnect) {
+        this.showError("HashConnect library not loaded. Please check CDN link.");
+        console.error("❌ HashConnect SDK missing from HTML.");
+        return false;
+      }
 
-            this.hashconnect = new window.HashConnect();
-            await this.hashconnect.init();
+      // Create a new HashConnect instance
+      this.hashconnect = new window.HashConnect();
 
-            // Set up event listeners
-            this.hashconnect.foundExtensionEvent.on((walletMetadata) => {
-                console.log('Found extension:', walletMetadata);
-            });
+      // Initialize app metadata
+      const initData = await this.hashconnect.init(this.appMetadata, "testnet", false);
 
-            this.hashconnect.pairingEvent.on((pairingData) => {
-                console.log('Paired with wallet:', pairingData);
-                this.onWalletConnected(pairingData);
-            });
+      this.topic = initData.topic;
+      console.log("✅ HashConnect Initialized:", initData);
 
-            return true;
-        } catch (error) {
-            console.error('Failed to initialize wallet:', error);
-            return false;
+      // Listen for connection events
+      this.hashconnect.foundExtensionEvent.once((walletMeta) => {
+        console.log("🔍 HashPack wallet detected:", walletMeta);
+      });
+
+      this.hashconnect.pairingEvent.once((pairingData) => {
+        console.log("✅ Paired with HashPack:", pairingData);
+        if (pairingData.accountIds && pairingData.accountIds.length > 0) {
+          this.accountId = pairingData.accountIds[0];
+          this.paired = true;
+          this.updateUI();
+          this.showSuccess(`Connected: ${this.accountId}`);
         }
-    }
+      });
 
+      return true;
+    } catch (err) {
+      console.error("❌ Init Error:", err);
+      this.showError("Failed to initialize HashConnect SDK.");
+      return false;
+    }
+  }
+
+  // Connect Wallet
+  async connectWallet() {
+    const ready = await this.init();
+    if (!ready) return;
+
+    try {
+      console.log("🔗 Attempting wallet connection...");
+
+      // Connect to local HashPack browser extension
+      this.hashconnect.connectToLocalWallet();
+
+      // Wait for user to approve pairing
+      this.showInfo("Check HashPack wallet to approve connection.");
+
+    } catch (err) {
+      console.error("❌ Wallet connection failed:", err);
+      this.showError("Failed to connect HashPack. Please open your wallet extension.");
+    }
+  }
+
+  // Disconnect Wallet
+  disconnectWallet() {
+    this.paired = false;
+    this.accountId = null;
+    this.updateUI();
+    this.showInfo("Wallet disconnected.");
+  }
+
+  // Update UI dynamically
+  updateUI() {
+    const btn = document.getElementById("connectWallet");
+    if (!btn) return;
+
+    if (this.paired && this.accountId) {
+      btn.textContent = `${this.accountId.slice(0, 8)}...`;
+      btn.classList.add("bg-green-500", "hover:bg-green-600");
+      btn.onclick = () => this.disconnectWallet();
+    } else {
+      btn.textContent = "Connect Wallet";
+      btn.classList.remove("bg-green-500", "hover:bg-green-600");
+      btn.onclick = () => this.connectWallet();
+    }
+  }
+
+  // Toast notification system
+  showNotification(message, type = "info") {
+    const div = document.createElement("div");
+    div.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 text-white ${
+      type === "error"
+        ? "bg-red-500"
+        : type === "success"
+        ? "bg-green-500"
+        : "bg-blue-500"
+    }`;
+    div.textContent = message;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 4000);
+  }
+
+  showError(msg) {
+    this.showNotification(msg, "error");
+  }
+  showSuccess(msg) {
+    this.showNotification(msg, "success");
+  }
+  showInfo(msg) {
+    this.showNotification(msg, "info");
+  }
+}
+
+// ✅ Initialize wallet when page loads
+window.addEventListener("DOMContentLoaded", () => {
+  window.walletManager = new WalletManager();
+  const connectBtn = document.getElementById("connectWallet");
+  if (connectBtn) connectBtn.onclick = () => walletManager.connectWallet();
+
+  console.log("🟢 Wallet manager initialized");
+});
     async connectWallet() {
         try {
             if (!this.hashconnect) {
@@ -150,3 +250,4 @@ class WalletManager {
 
 // Global wallet manager instance
 window.walletManager = new WalletManager();
+
