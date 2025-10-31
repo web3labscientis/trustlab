@@ -20,9 +20,13 @@ Built-in Web3 payment support allows instant crypto payments (HBAR/stablecoins) 
 
 
 ⚙️ Core Features
+
 ✅ Blockchain Verification – Test results are hashed and recorded on Hedera for authenticity.
+
 ✅ QR & ID Verification – Patients or institutions verify data using unique codes or QR scan.
+
 ✅ Crypto Payments – Pay for lab services using Hedera-compatible wallets.
+
 ✅ Admin Panel – Hospitals upload and track verified test records.
 
 
